@@ -63,6 +63,8 @@ We use the **A2A (Agent-to-Agent)** pattern and **A2UI** extension for several k
 1. **Decoupling**: Gemini Enterprise doesn't need to know the specific logic or data structure of every specialized agent. A2A provides a standard communication protocol.
 2. **Rich Interactive Experience**: Standard chat is limited to text. A2UI allows agents to return rich, structured components (like contact cards and interactive charts) that render natively in the Gemini Enterprise chat interface.
 3. **Dynamic Extensibility**: Specialized agents can provide specific visualizations tailored to the user's request (e.g., a VegaChart for pricing, a profile card for contacts) without requiring updates to the main Gemini Enterprise application UI.
+4. **Security First**: Instead of sending executable HTML or JavaScript (which carries security risks across trust boundaries), A2UI uses a **declarative JSON-based protocol**. The client application maintains a catalog of trusted components, reducing the risk of UI injection.
+5. **LLM-Friendly**: The UI is represented as a flat list of components with ID references, making it easy for LLMs to generate and update incrementally.
 
 ### Sequence Diagram
 
@@ -207,3 +209,4 @@ Here are the references to the public documentation and repositories used in thi
 - **Google Cloud Documentation**: [Register and manage A2A agents](https://docs.cloud.google.com/gemini/enterprise/docs/register-and-manage-an-a2a-agent)
 - **Vega-Lite Specification**: [https://vega.github.io/schema/vega-lite/v5.json](https://vega.github.io/schema/vega-lite/v5.json)
 - **A2UI Specification**: [https://a2ui.org/](https://a2ui.org/)
+- **A2UI Blog Post**: [Introducing A2UI: An open project for agent-driven interfaces](https://developers.googleblog.com/introducing-a2ui-an-open-project-for-agent-driven-interfaces/)
