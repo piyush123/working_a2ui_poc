@@ -1,212 +1,54 @@
-# Tutorial: Combined A2UI Agent on Gemini Enterprise
+# Combined A2UI Agent (Refactored)
 
-This tutorial guides you through setting up, configuring, and deploying a multi-skill AI agent that uses **A2UI** (Agent-to-Agent User Interface) to render interactive components (like contact cards and charts) in **Google Cloud Gemini Enterprise**.
+This project contains a multi-skill AI agent built with the **Google Agent Development Kit (ADK)** and the **Agent-to-Agent (A2A)** protocol. It provides interactive UI components (Contact Cards and Pricing Charts) for **Gemini Enterprise**.
 
-The agent combines two main skills:
-1. **Contact Lookup**: Finds contact information for colleagues.
-2. **Pricing Analysis**: Compares Nutella prices across different retailers.
+## 1. Project Structure
 
----
+The project follows the standard `agent-starter-pack` structure:
+- **`app/`**: Core agent logic and tools.
+  - **`agent.py`**: Agent definition, prompts, and tool registration.
+  - **`executor.py`**: A2A protocol implementation and A2UI JSON parsing.
+  - **`tools.py`**: Tool implementations (e.g., `get_contact_info`).
+  - **`contact_data.json`**: Mock data for contacts.
+  - **`agent_runtime_app.py`**: Entry point for Agent Engine (Reasoning Engine) deployment.
+- **`evalsets/`**: Evaluation sets for systematic testing.
+- **`examples/0.8/`**: A2UI component examples.
+- **`Makefile`**: Standard developer workflows.
 
-## Table of Contents
-1. [Prerequisites](#prerequisites)
-2. [Project Structure](#project-structure)
-3. [Architecture & Flow](#architecture--flow)
-4. [Configuration (`.env`)](#configuration-env)
-5. [Obtaining Authorization (Crucial Step)](#obtaining-authorization-crucial-step)
-6. [Deployment](#deployment)
-7. [Verification](#verification)
+## 2. Developer Workflows
 
----
+This project uses `agents-cli` and a `Makefile` to manage the development lifecycle.
 
-## 1. Prerequisites
-
-Before you begin, ensure you have the following:
-- A Google Cloud Project with billing enabled.
-- **Gemini Enterprise** (Discovery Engine) enabled in your project.
-- **Vertex AI** enabled, specifically access to **Agent Engine** (Reasoning Engines).
-- `gcloud` CLI installed and authenticated.
-- `uv` installed for Python package management (recommended).
-
----
-
-## 2. Project Structure
-
-Your workspace contains the following key files:
-- `agents/combined_agent/agent.py`: Defines the agent's tools, prompts, and system instructions.
-- `agents/combined_agent/executor.py`: Handles the A2A protocol and UI event dispatching.
-- `deploy_combined.py`: Script to deploy the agent to Agent Engine and register it on Gemini Enterprise.
-- `tools.py`: Contains the `get_contact_info` tool.
-- `contact_data.json`: Mock data for the contact tool.
-- `examples/0.8/`: Directory containing valid A2UI JSON examples used to guide the model.
-
----
-
-## 3. Architecture & Flow
-
-This project demonstrates the **Agent-to-Agent (A2A)** protocol and **A2UI** extension in Google Cloud Gemini Enterprise.
-
-### Architecture Overview
-
-![Architecture Diagram](architecture_diagram_dark.png)
-
-Gemini Enterprise acts as the frontend orchestrator. When a user interacts with an agent that requires custom UI or specific tools, the flow is as follows:
-
-- **Gemini Enterprise (GE)**: The main user interface and orchestrator.
-- **Agent Engine (Reasoning Engine)**: Hosts the custom Python agent code.
-- **A2UI Extension**: Defines how the agent can send structured UI data (like cards and charts) back to GE to be rendered.
-
-### Why A2A and A2UI?
-
-We use the **A2A (Agent-to-Agent)** pattern and **A2UI** extension for several key reasons:
-
-1. **Decoupling**: Gemini Enterprise doesn't need to know the specific logic or data structure of every specialized agent. A2A provides a standard communication protocol.
-2. **Rich Interactive Experience**: Standard chat is limited to text. A2UI allows agents to return rich, structured components (like contact cards and interactive charts) that render natively in the Gemini Enterprise chat interface.
-3. **Dynamic Extensibility**: Specialized agents can provide specific visualizations tailored to the user's request (e.g., a VegaChart for pricing, a profile card for contacts) without requiring updates to the main Gemini Enterprise application UI.
-4. **Security First**: Instead of sending executable HTML or JavaScript (which carries security risks across trust boundaries), A2UI uses a **declarative JSON-based protocol**. The client application maintains a catalog of trusted components, reducing the risk of UI injection.
-5. **LLM-Friendly**: The UI is represented as a flat list of components with ID references, making it easy for LLMs to generate and update incrementally.
-
-### Sequence Diagram
-
-Here is the flow of a request from the user to the agent and back:
-
-![Sequence Diagram](sequence_diagram_clean_dark.png)
-
-**Reflection on the Diagram:**
-- **A2A (Agent-to-Agent)**: The arrows between *Gemini Enterprise* and *Custom Agent* represent the A2A protocol. It passes the user's intent and context in a standard request, and receives the answer (both text and UI) in a standard response.
-- **A2UI (Agent UI)**: The step where the *Custom Agent* wraps the data in `a2ui-json` and returns it, and *Gemini Enterprise* renders the VegaChart, illustrates the A2UI extension. The agent dictates the UI structure, and the platform handles the rendering.
-
----
-
-## 4. Configuration (`.env`)
-
-Create a `.env` file in the root directory (if not already present) and fill in the following variables:
-
-```env
-PROJECT_ID=your-gcp-project-id
-LOCATION=us-central1
-STORAGE_BUCKET=gs://your-staging-bucket-name
-GEMINI_ENTERPRISE_APP_ID=your-gemini-enterprise-app-id
-AGENT_AUTHORIZATION=projects/YOUR_PROJECT_NUMBER/locations/global/authorizations/YOUR_AUTH_ID
-
-# Optional
-GOOGLE_GENAI_MODEL=gemini-2.5-flash
-```
-
-> [!IMPORTANT]
-> `LOCATION` should be set to `us-central1` (or the region where you have Agent Engine access).
-> `STORAGE_BUCKET` must start with `gs://` and is used for staging code.
-
-> [!NOTE]
-> `GOOGLE_GENAI_MODEL` is optional and defaults to `gemini-2.5-flash`. You can change it to other supported models if needed.
-
----
-
-## 5. Obtaining Authorization (Crucial Step)
-
-Gemini Enterprise requires agents deployed via Agent Engine to have a unique **Authorization Resource** to securely communicate with user-facing interfaces.
-
-Here is how to create and obtain the `AGENT_AUTHORIZATION` value:
-
-### Step 4.1: Create an OAuth 2.0 Client ID
-1. Go to the **Google Cloud Console**.
-2. Navigate to **APIs & Services** > **Credentials**.
-3. Click **Create Credentials** > **OAuth client ID**.
-4. Select **Web application** as the Application type.
-5. Add the following **Authorized redirect URIs**:
-   - `https://vertexaisearch.cloud.google.com/oauth-redirect`
-   - `https://vertexaisearch.cloud.google.com/static/oauth/oauth.html`
-6. Click **Create** and download the JSON file. It will look like this:
-
-```json
-{
-  "web": {
-    "client_id": "YOUR_CLIENT_ID",
-    "project_id": "YOUR_PROJECT_ID",
-    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-    "token_uri": "https://oauth2.googleapis.com/token",
-    "client_secret": "YOUR_CLIENT_SECRET",
-    ...
-  }
-}
-```
-
-### Step 4.2: Create the Authorization Resource
-Run the following `curl` command in your terminal to register the credentials with Gemini Enterprise. 
-
-> [!WARNING]
-> Replace `YOUR_PROJECT_ID`, `YOUR_OAUTH_CLIENT_ID`, and `YOUR_OAUTH_CLIENT_SECRET` with values from your downloaded JSON.
-> Define an arbitrary alphanumeric `AUTH_ID` (e.g., `combined-auth-v1`).
-
+### Setup
+Ensure you have `uv` and `gcloud` installed.
 ```bash
-curl -X POST \
-  -H "Authorization: Bearer $(gcloud auth application-default print-access-token)" \
-  -H "Content-Type: application/json" \
-  -H "X-Goog-User-Project: YOUR_PROJECT_ID" \
-  "https://global-discoveryengine.googleapis.com/v1alpha/projects/YOUR_PROJECT_ID/locations/global/authorizations?authorizationId=YOUR_AUTH_ID" \
-  -d '{
-    "name": "projects/YOUR_PROJECT_ID/locations/global/authorizations/YOUR_AUTH_ID",
-    "serverSideOauth2": {
-      "clientId": "YOUR_OAUTH_CLIENT_ID",
-      "clientSecret": "YOUR_OAUTH_CLIENT_SECRET",
-      "authorizationUri": "https://accounts.google.com/o/oauth2/v2/auth?client_id=YOUR_OAUTH_CLIENT_ID&redirect_uri=https%3A%2F%2Fvertexaisearch.cloud.google.com%2Fstatic%2Foauth%2Foauth.html&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform&include_granted_scopes=true&response_type=code&access_type=offline&prompt=consent",
-      "tokenUri": "https://oauth2.googleapis.com/token"
-    }
-  }'
+make install
 ```
 
-### Step 4.3: Get the Value
-Upon success, the API returns the resource name. Put this full string into your `.env` file as `AGENT_AUTHORIZATION`:
-`projects/YOUR_PROJECT_NUMBER/locations/global/authorizations/YOUR_AUTH_ID`
+### Local Testing
+Run a quick smoke test or open the interactive playground:
+```bash
+# Smoke test
+agents-cli run "List all contact cards"
+
+# Interactive Playground
+make playground
+```
+
+### Evaluation
+Systematically test the agent's performance against core use cases:
+```bash
+make eval
+```
+
+### Deployment
+Deploy the agent to **Agent Engine** (Vertex AI):
+```bash
+make deploy
+```
+
+## 3. A2A & A2UI
+This agent uses the **A2A** protocol to communicate with Gemini Enterprise and the **A2UI** extension to render rich components. It is configured to handle specialized UI events like `view_profile` and `send_email`.
 
 ---
-
-## 6. Deployment
-
-Once your `.env` file is fully configured, you can deploy the agent.
-
-1. Ensure your virtual environment is active and dependencies are synced:
-   ```bash
-   uv sync
-   source .venv/bin/activate
-   ```
-2. Run the deployment script:
-   ```bash
-   uv run deploy_combined.py
-   ```
-
-The script will:
-- Upload your code to the GCS bucket.
-- Create a Reasoning Engine instance in Vertex AI.
-- Register the agent in your Gemini Enterprise application.
-
-This process takes about **5 to 10 minutes**.
-
----
-
-## 7. Verification
-
-1. Open **Google Cloud Gemini Enterprise** and navigate to your application.
-2. You should see the agent listed (e.g., `combined_poc`).
-3. Click **Authorize** if prompted by the UI.
-4. Test with queries:
-   - **"List all contact cards"** -> Should render a list of contact cards.
-   - **"Compare Nutella prices"** -> Should render a bar chart.
-
-### Successful Test Example
-Here is what a successful test looks like in Gemini Enterprise, showing the pricing chart, a demo chart, and a contact card:
-
-![Successful Test](successful_test.png)
-
----
-
-## 8. References
-
-Here are the references to the public documentation and repositories used in this project:
-
-- **A2UI GitHub Repository**: [https://github.com/google/A2UI](https://github.com/google/A2UI)
-- **A2UI Gemini Enterprise Sample**: [A2UI/samples/agent/adk/gemini_enterprise](https://github.com/google/A2UI/tree/main/samples/agent/adk/gemini_enterprise)
-- **Google Cloud Documentation**: [Register and manage A2A agents](https://docs.cloud.google.com/gemini/enterprise/docs/register-and-manage-an-a2a-agent)
-- **Vega-Lite Specification**: [https://vega.github.io/schema/vega-lite/v5.json](https://vega.github.io/schema/vega-lite/v5.json)
-- **A2UI Specification**: [https://a2ui.org/](https://a2ui.org/)
-- **A2UI Blog Post**: [Introducing A2UI: An open project for agent-driven interfaces](https://developers.googleblog.com/introducing-a2ui-an-open-project-for-agent-driven-interfaces/)
+*Refer to the original `GEMINI.md` for detailed coding guidelines and ADK patterns.*

@@ -1,0 +1,27 @@
+[
+  {
+    "input": "Who is John Doe?",
+    "expected_output": "John Doe is a Software Engineer in the Engineering department.",
+    "criteria": [
+      "The agent should mention that John Doe is a Software Engineer.",
+      "The agent should mention the Engineering department."
+    ]
+  },
+  {
+    "input": "List all contacts",
+    "expected_output": "I found several contacts: John Doe, Jane Smith, and Bob Johnson.",
+    "criteria": [
+      "The agent should list multiple names from the contact data.",
+      "The agent should provide a clean summary of the findings."
+    ]
+  },
+  {
+    "input": "Compare Nutella prices",
+    "expected_output": "The price of Nutella 400g is $5.99 at Our Shop, $6.49 at Competitor A, and $5.49 at Competitor B.",
+    "criteria": [
+      "The agent should call the get_pricing_comparison tool.",
+      "The agent should mention the price at Our Shop ($5.99).",
+      "The agent should mention Competitor A and Competitor B prices."
+    ]
+  }
+]

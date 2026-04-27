@@ -3,7 +3,7 @@
   { "surfaceUpdate": {
       "surfaceId": "vega-chart-demo",
       "components": [
-        { "id": "root", "component": { "Column": { "children": { "explicitList": ["title-1", "chart-card-1"] } } } },
+        { "id": "root", "component": { "Container": { "children": { "explicitList": ["title-1", "chart-card-1"] } } } },
         { "id": "title-1", "component": { "Text": { "text": { "literalString": "Demo Vega Chart" }, "usageHint": "h3" } } },
         { "id": "chart-card-1", "component": { "Card": { "child": "price-chart-1" } } },
         { "id": "price-chart-1", "component": {
